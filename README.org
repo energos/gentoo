@@ -1,0 +1,388 @@
+#+TITLE: Gentoo Full Disk Encryption
+#+OPTIONS: toc:nil num:nil html-postamble:nil
+#+STARTUP: showall
+
+* Install
+
+#+begin_verse
+livecd ~ # fdisk -l /dev/sda
+Disk /dev/sda: 62 GiB, 66571993088 bytes, 130023424 sectors
+Disk model: VBOX HARDDISK   
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: gpt
+Disk identifier: 81EB0E89-54CA-46C7-9C53-4A208CDDD697
+
+Device     Start       End   Sectors Size Type
+/dev/sda1   2048     67583     65536  32M EFI System
+/dev/sda2  67584 130021375 129953792  62G Linux filesystem
+#+end_verse
+
+#+begin_src bash
+  cryptsetup luksFormat --type luks1 /dev/sda2
+  cryptsetup luksOpen /dev/sda2 root1vm
+  vgcreate root1vm /dev/mapper/root1vm
+  lvcreate --name swap -L 1G root1vm
+  lvcreate --name root -l 100%FREE root1vm
+  # mkfs.vfat -F 32 -n EFI1 /dev/sda1
+  mkfs.vfat -F 16 -n EFI1 /dev/sda1
+  mkfs.ext4 -L ROOT1 /dev/root1vm/root
+  mkswap -L SWAP1 /dev/root1vm/swap
+
+  mkdir -p /mnt/gentoo
+  mount /dev/root1vm/root /mnt/gentoo/
+  swapon /dev/root1vm/swap
+
+  mkdir -p /mnt/gentoo/efi
+  mount /dev/sda1 /mnt/gentoo/efi/
+#+end_src
+
+#+begin_verse
+livecd ~ # lsblk -f /dev/sda
+NAME               FSTYPE      FSVER LABEL UUID                                   FSAVAIL FSUSE% MOUNTPOINTS
+sda
+├─sda1             vfat              EFI1  EFF4-955A                                31.9M     0% /mnt/gentoo/efi
+└─sda2             crypto_LUKS             e60b4cd9-978e-49df-89b2-0fbf881b8dd2
+  └─root1vm        LVM2_member             IcFuqC-JKrB-fawg-lsCO-t3Y5-OyIZ-YuqJB7
+    ├─root1vm-swap swap              SWAP1 16b224ee-137c-4f39-befa-160ad6d462f5                  [SWAP]
+    └─root1vm-root ext4              ROOT1 711db44f-a276-4304-ba0b-ed680c07e918     56.6G     0% /mnt/gentoo
+#+end_verse
+
+#+begin_src bash
+  cd /mnt/gentoo
+  wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240609T164903Z/stage3-amd64-desktop-openrc-20240609T164903Z.tar.xz.sha256
+  wget https://distfiles.gentoo.org/releases/amd64/autobuilds/20240609T164903Z/stage3-amd64-desktop-openrc-20240609T164903Z.tar.xz
+  sha256sum -c stage3-amd64-desktop-openrc-20240609T164903Z.tar.xz.sha256
+
+  tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner
+#+end_src
+
+#+begin_verse
+# /etc/portage/make.conf
+
+# These settings were set by the catalyst build script that automatically
+# built this stage.
+# Please consult /usr/share/portage/config/make.conf.example for a more
+# detailed example.
+
+COMMON_FLAGS="-O2 -pipe"
+CFLAGS="${COMMON_FLAGS}"
+CXXFLAGS="${COMMON_FLAGS}"
+FCFLAGS="${COMMON_FLAGS}"
+FFLAGS="${COMMON_FLAGS}"
+
+PORTAGE_ELOG_CLASSES="log warn error"
+PORTAGE_ELOG_SYSTEM="save_summary:log,warn,error,qa save echo"
+MAKEOPTS="-j4 -l8"
+FEATURES="notitles"
+# FEATURES="${FEATURES} buildpkg"
+
+# Binary Host
+# https://wiki.gentoo.org/wiki/Gentoo_Binary_Host_Quickstart
+FEATURES="${FEATURES} binpkg-request-signature"
+FEATURES="${FEATURES} getbinpkg"
+
+# NOTE: This stage was built with the bindist Use flag enabled
+
+# This sets the language of build output to English.
+# Please keep this setting intact when reporting bugs.
+LC_MESSAGES=C.utf8
+#+end_verse
+
+#+begin_src bash
+  cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
+#+end_src
+
+#+begin_src bash
+  mount --types proc /proc /mnt/gentoo/proc && \
+  mount --rbind /sys /mnt/gentoo/sys && \
+  mount --make-rslave /mnt/gentoo/sys && \
+  mount --rbind /dev /mnt/gentoo/dev && \
+  mount --make-rslave /mnt/gentoo/dev && \
+  mount --bind /run /mnt/gentoo/run && \
+  mount --make-slave /mnt/gentoo/run && \
+  echo 'OK!'
+#+end_src
+
+#+begin_verse
+# ~/inputrc
+$include /etc/inputrc
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+#+end_verse
+
+#+begin_verse
+# ~/.tmux.conf
+
+set -g prefix S-F1
+set -g prefix2 C-b
+bind S-F1 send-prefix -2
+bind C-b send-prefix -2
+
+bind r source-file ~/.tmux.conf \; display "Reloaded!"
+
+set -g base-index 1
+
+set -g default-command "${SHELL}"
+
+unbind %
+unbind '"'
+bind | split-window -h
+bind '\' split-window -h
+bind - split-window -v
+
+set -g repeat-time 500
+
+set -g history-limit 100000
+
+set -g status-bg colour235
+set -g status-style fg=white,bg=black
+# set -g window-status-style fg=cyan,bg=default,dim
+set -g window-status-style fg=gray70,bg=default,dim
+# set -g window-status-current-style fg=white,bg=blue,bright
+set -g window-status-current-style fg=white,bg=gray25
+set -g pane-border-style fg=white,bg=black
+set -g pane-active-border-style fg=cyan,bg=black
+set -g message-style fg=white,bg=black,bright
+
+set -g status-justify left
+
+# bind C-c run -b "tmux save-buffer - | xclip -i"
+# bind C-v run -b "tmux set-buffer \"$(xclip -o)\"; tmux paste-buffer"
+
+unbind +
+unbind =
+bind + new-window -d -n tmux-zoom  \; swap-pane -s tmux-zoom.0 \; select-window -t tmux-zoom
+bind = last-window \; swap-pane -s tmux-zoom.0 \; kill-window -t tmux-zoom
+
+bind b choose-buffer
+#+end_verse
+
+#+begin_src bash
+  cp ~/.inputrc /mnt/gentoo/root/
+  cp ~/.tmux.conf /mnt/gentoo/root/
+#+end_src
+
+#+begin_src bash
+  chroot /mnt/gentoo /bin/bash
+  source /etc/profile && export PS1="(chroot) ${PS1}"
+#+end_src
+
+#+begin_src bash
+  emerge-webrsync
+  emerge --sync && echo OK || echo doohh
+#+end_src
+
+#+begin_src bash
+  ln -s ../../var/lib/portage/world /etc/portage/
+#+end_src
+
+#+begin_src bash
+  eselect news list
+  eselect news read
+#+end_src
+
+#+begin_src bash
+  eselect profile list
+#+end_src
+#+begin_verse
+...
+[23]  default/linux/amd64/23.0/desktop (stable) *
+...
+#+end_verse
+
+#+begin_verse
+# /etc/portage/binrepos.conf/gentoobinhost.conf
+
+# These settings were set by the catalyst build script that automatically
+# built this stage.
+# Please consider using a local mirror.
+
+[gentoobinhost]
+priority = 1
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64
+#+end_verse
+
+#+begin_src bash
+  getuto
+#+end_src
+
+#+begin_src bash
+  # VirtualBox Guest, fresh install, desktop profile
+  emerge --info | grep ^USE
+#+end_src
+#+begin_verse
+USE="X a52 aac acl acpi alsa amd64 bluetooth branding bzip2 cairo cdda cdr cet crypt cups dbus dri dts dvd dvdr elogind encode exif flac gdbm gif gpm gtk gui iconv icu ipv6 jpeg lcms libnotify libtirpc mad mng mp3 mp4 mpeg multilib ncurses nls ogg opengl openmp pam pango pcre pdf png policykit ppds qt5 readline sdl seccomp sound spell ssl startup-notification svg test-rust tiff truetype udev udisks unicode upower usb vorbis vulkan wxwidgets x264 xattr xcb xft xml xv xvid zlib" ABI_X86="64" ADA_TARGET="gcc_12" APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions alias auth_basic authn_anon authn_dbm authn_file authz_dbm authz_groupfile authz_host authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock deflate dir env expires ext_filter file_cache filter headers include info log_config logio mime mime_magic negotiation rewrite setenvif speling status unique_id userdir usertrack vhost_alias" CALLIGRA_FEATURES="karbon sheets words" COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog" CPU_FLAGS_X86="mmx mmxext sse sse2" ELIBC="glibc" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18 garmin garmintxt gpsclock greis isync itrax mtk3301 ntrip navcom oceanserver oncore rtcm104v2 rtcm104v3 sirf skytraq superstar2 tsip tripmate tnt ublox" INPUT_DEVICES="libinput" KERNEL="linux" LCD_DEVICES="bayrad cfontz glk hd44780 lb216 lcdm001 mtxorb text" LUA_SINGLE_TARGET="lua5-1" LUA_TARGETS="lua5-1" OFFICE_IMPLEMENTATION="libreoffice" PHP_TARGETS="php8-2" POSTGRES_TARGETS="postgres15" PYTHON_SINGLE_TARGET="python3_12" PYTHON_TARGETS="python3_12" RUBY_TARGETS="ruby31 ruby32" VIDEO_CARDS="amdgpu fbdev intel nouveau radeon radeonsi vesa dummy" XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipp2p iface geoip fuzzy condition tarpit sysrq proto logmark ipmark dhcpmac delude chaos account"
+#+end_verse
+#+begin_src bash
+  emerge --info | grep ^USE | md5sum
+#+end_src
+#+begin_verse
+729556a4b0333142a6980d66fe464244
+#+end_verse
+
+#+begin_src bash
+  # Old Lisy
+  emerge --info | grep ^USE
+#+end_src
+#+begin_verse
+USE="X acl alsa amd64 bindist bzip2 cairo caps cet crypt cups dbus dvd elogind emacs encode exif ffmpeg fontconfig gdbm gif glamor gstreamer gtk iconv icu ipv6 jit jpeg libtirpc mad mp3 multilib ncurses offensive ogg opengl openmp opus pam pcre pipewire png pulseaudio qml readline seccomp split-usr ssl svg taglib test-rust text theora tiff tk truetype udev unicode vaapi vcd vdpau vorbis vpx x264 xattr zlib" ABI_X86="64" ADA_TARGET="gcc_12" APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions alias auth_basic authn_anon authn_dbm authn_file authz_dbm authz_groupfile authz_host authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock deflate dir env expires ext_filter file_cache filter headers include info log_config logio mime mime_magic negotiation rewrite setenvif speling status unique_id userdir usertrack vhost_alias" CALLIGRA_FEATURES="karbon sheets words" COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog" CPU_FLAGS_X86="mmx mmxext sse sse2 sse3" ELIBC="glibc" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18 garmin garmintxt gpsclock greis isync itrax mtk3301 ntrip navcom oceanserver oncore rtcm104v2 rtcm104v3 sirf skytraq superstar2 tsip tripmate tnt ublox" INPUT_DEVICES="libinput" KERNEL="linux" L10N="en en-US" LCD_DEVICES="bayrad cfontz glk hd44780 lb216 lcdm001 mtxorb text" LUA_SINGLE_TARGET="lua5-1" LUA_TARGETS="lua5-1" OFFICE_IMPLEMENTATION="libreoffice" PHP_TARGETS="php8-2" POSTGRES_TARGETS="postgres15" PYTHON_SINGLE_TARGET="python3_12" PYTHON_TARGETS="python3_12" RUBY_TARGETS="ruby32 ruby33" VIDEO_CARDS="amdgpu radeon radeonsi nouveau intel i965 vmware" XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipp2p iface geoip fuzzy condition tarpit sysrq proto logmark ipmark dhcpmac delude chaos account"
+#+end_verse
+#+begin_src bash
+  emerge --info | grep ^USE | md5sum
+#+end_src
+#+begin_verse
+56b87a9d300103ab81b2b1e6e3fa81c4
+#+end_verse
+
+#+begin_src bash
+  emerge --ask --verbose --noreplace bash-completion nano zile gentoolkit cpuid2cpuflags app-misc/mc tmux
+  source /etc/profile && export PS1="(chroot) ${PS1}"
+#+end_src
+
+#+begin_src bash
+  # ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime 
+  echo "Brazil/East" > /etc/timezone
+  emerge --config sys-libs/timezone-data
+#+end_src
+
+#+begin_src bash
+zile /etc/locale.gen
+locale-gen
+eselect locale list
+eselect locale set <n>
+env-update && source /etc/profile && export PS1="(chroot) $PS1"
+#+end_src
+
+#+begin_src bash
+  echo "sys-kernel/installkernel dracut grub" > /etc/portage/package.use/installkernel
+  echo "sys-fs/lvm2 lvm" > /etc/portage/package.use/lvm2
+  echo "sys-boot/grub mount device-mapper" > /etc/portage/package.use/grub
+
+  emerge --ask --verbose lvm2 cryptsetup terminus-font
+  emerge --ask --verbose gentoo-kernel-bin linux-firmware
+  rc-update add lvm boot
+  rc-update add dmcrypt boot
+#+end_src
+
+#+begin_src bash
+  emerge --ask --verbose --update --deep --with-bdeps=y --newuse --changed-deps @world
+  emerge --ask --depclean
+#+end_src
+
+#+begin_verse
+# /etc/fstab
+
+tmpfs                   /tmp            tmpfs           size=2G,noatime,nodev,nosuid    0 0
+
+/dev/root1vm/root       /               ext4            noatime,shared                  0 1
+/dev/root1vm/swap       none            swap            sw                              0 0
+UUID=EFF4-955A          /efi            vfat            umask=0077                      0 2
+#+end_verse
+
+#+begin_src bash
+  passwd
+#+end_src
+
+#+begin_verse
+# /etc/cryptab: mappings for encrypted partitions
+#
+# Each mapped device will be created in /dev/mapper, so your /etc/fstab
+# should use the /dev/mapper/<name> paths for encrypted devices.
+#
+# NOTE: Do not list your root (/) partition here.
+
+root1vm         UUID=e60b4cd9-978e-49df-89b2-0fbf881b8dd2       /boot/volume.key        luks
+#+end_verse
+
+#+begin_src bash
+  dd bs=1 count=64 if=/dev/urandom of=/boot/volume.key
+  cryptsetup luksAddKey /dev/sda2 /boot/volume.key
+  chmod 000 /boot/volume.key
+  # chmod -R g-rwx,o-rwx /boot/
+#+end_src
+
+#+begin_verse
+# /etc/hosts
+192.168.0.111           lisy
+192.168.0.112           speedy
+192.168.0.113           sloppy
+192.168.1.11            printer
+#+end_verse
+
+#+begin_verse
+# /etc/conf.d/consolefont
+consolefont="ter-128b"
+#+end_verse
+#+begin_src bash
+  rc-update add consolefont default
+#+end_src
+
+#+begin_verse
+# /etc/conf.d/hostname
+hostname="vm-gentoo"
+#+end_verse
+
+#+begin_verse
+# /etc/conf.d/keymaps
+keymap="us-acentos"
+windowkeys="NO"
+extended_keymaps="/usr/local/share/keymaps/nocaps.map"
+#+end_verse
+
+#+begin_verse
+# /usr/local/share/keymaps
+# Add to your /etc/conf.d/keymaps
+# extended_keymaps="/usr/local/share/keymaps/nocaps.map"
+
+# keycode 58 = F13
+keycode 183 = F13                                                                                                               
+keycode 184 = F14
+keycode 185 = F15
+#+end_verse
+
+#+begin_src bash
+  emerge --ask --verbose --noreplace dhcpcd openssh syslog-ng logrotate cronie gpm chrony
+  rc-update add dhcpcd default && rc-update add cronie default && rc-update add sshd default && rc-update add syslog-ng default && rc-update add gpm default && rc-update add chronyd default && echo 'OK!'
+  rc-update show
+#+end_src
+
+#+begin_src bash
+  emerge --ask --verbose --noreplace grub
+  mount -o remount,rw /sys/firmware/efi/efivars
+  grub-install --efi-directory=/efi /dev/sda
+#+end_src
+#+begin_verse
+Installing for x86_64-efi platform.
+grub-install: error: attempt to install to encrypted disk without cryptodisk enabled. Set `GRUB_ENABLE_CRYPTODISK=y' in file `/etc/default/grub'.
+#+end_verse
+
+#+begin_verse
+# /etc/default/grub
+#+end_verse
+
+#+begin_src bash
+  grub-mkconfig -o /boot/grub/grub.cfg
+#+end_src
+
+#+begin_src bash
+  exit
+  cd
+  umount -l /mnt/gentoo/dev{/shm,/pts,}
+  umount -R /mnt/gentoo
+  reboot
+#+end_src
+
+Yay, it works! Of course there are some [[WTF][WTF]]s.
+
+* WTF
+** Local binary packages signature
+#+begin_verse
+FEATURES="${FEATURES} buildpkg"
+...
+gpg: WARNING: unsafe ownership on homedir '/etc/portage/gnupg'
+...
+#+end_verse
+** Boot hangs if VirtualBox guest 3D acceleration is enabled
+** /etc/cripttab ignored

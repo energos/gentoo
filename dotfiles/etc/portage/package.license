@@ -1,0 +1,17 @@
+*/* @BINARY-REDISTRIBUTABLE
+app-misc/ckermit Kermit
+sci-visualization/xgraph xgraph
+app-emulation/virtualbox-extpack-oracle PUEL PUEL-10 PUEL-11
+app-arch/unarj arj
+sci-electronics/eagle cadsoft-2
+dev-embedded/pk2cmd MicroChip-PK2
+net-analyzer/nmap NPSL
+sci-physics/root MSttfEULA
+net-print/brother-* brother-eula
+app-arch/lha lha
+media-fonts/corefonts MSttfEULA
+sci-mathematics/gimps GIMPS
+net-analyzer/nmap NPSL-0.94
+app-benchmarks/geekbench geekbench
+dev-build/cmake CMake
+app-editors/vscode Microsoft-vscode

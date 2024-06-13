@@ -1,0 +1,8 @@
+# /etc/cryptab: mappings for encrypted partitions
+#
+# Each mapped device will be created in /dev/mapper, so your /etc/fstab
+# should use the /dev/mapper/<name> paths for encrypted devices.
+#
+# NOTE: Do not list your root (/) partition here.
+
+root1vm		UUID=e60b4cd9-978e-49df-89b2-0fbf881b8dd2	/boot/volume.key	luks
