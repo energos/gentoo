@@ -7,7 +7,7 @@
 #+begin_example
 livecd ~ # fdisk -l /dev/sda
 Disk /dev/sda: 62 GiB, 66571993088 bytes, 130023424 sectors
-Disk model: VBOX HARDDISK   
+Disk model: VBOX HARDDISK
 Units: sectors of 1 * 512 = 512 bytes
 Sector size (logical/physical): 512 bytes / 512 bytes
 I/O size (minimum/optimal): 512 bytes / 512 bytes
@@ -242,7 +242,7 @@ USE="X acl alsa amd64 bindist bzip2 cairo caps cet crypt cups dbus dvd elogind e
 #+end_src
 
 #+begin_src bash
-  # ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime 
+  # ln -sf /usr/share/zoneinfo/Brazil/East /etc/localtime
   echo "Brazil/East" > /etc/timezone
   emerge --config sys-libs/timezone-data
 #+end_src
@@ -337,7 +337,7 @@ extended_keymaps="/usr/local/share/keymaps/nocaps.map"
 # extended_keymaps="/usr/local/share/keymaps/nocaps.map"
 
 # keycode 58 = F13
-keycode 183 = F13                                                                                                               
+keycode 183 = F13
 keycode 184 = F14
 keycode 185 = F15
 #+end_example
