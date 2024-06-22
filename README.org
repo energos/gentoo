@@ -261,7 +261,7 @@ env-update && source /etc/profile && export PS1="(chroot) $PS1"
   echo "sys-boot/grub mount device-mapper" > /etc/portage/package.use/grub
 
   emerge --ask --verbose lvm2 cryptsetup terminus-font
-  emerge --ask --verbose gentoo-kernel-bin linux-firmware
+  emerge --ask --verbose gentoo-kernel-bin linux-headers linux-firmware
   rc-update add lvm boot
   rc-update add dmcrypt boot
 #+end_src
@@ -377,8 +377,9 @@ grub-install: error: attempt to install to encrypted disk without cryptodisk ena
 Yay, it works! Of course there are some [[file:WTF.org][WTF]]s
 
 * Packages
+** Basic
 #+begin_src bash
-emerge --ask --verbose --noreplace bash-completion openssh app-misc/screen tmux app-misc/mc eclean-kernel nano zile plocate the_silver_searcher dev-vcs/git bc wget curl pciutils usbutils ethtool w3m gentoolkit cpuid2cpuflags fortune-mod neofetch sshfs eselect-repository lshw dmidecode whois multitail syslinux htop iotop lsof eject socat netcat ckermit cdrtools dosfstools rlwrap p7zip zip unrar iw md5deep ripgrep terminus-font evtest nmap hdparm
+emerge --ask --verbose --noreplace bash bash-completion openssh app-misc/screen tmux app-misc/mc eclean-kernel nano zile plocate the_silver_searcher dev-vcs/git wget curl pciutils usbutils ethtool w3m gentoolkit cpuid2cpuflags fortune-mod neofetch sshfs eselect-repository eselect-python lshw dmidecode whois multitail syslinux htop iotop lsof socat openbsd-netcat ckermit cdrtools dosfstools rlwrap zip unrar iw md5deep ripgrep terminus-font evtest nmap hdparm arj autoconf automake bat sys-devel/bc bison flex cmake dos2unix fd gcc gdb hwinfo srecord app-text/tree
 #+end_src
 
 * initramfs with dracut
@@ -392,5 +393,5 @@ install_items+=" /boot/volume.key /etc/crypttab "
 
 * Packages
 #+begin_src bash
-  cat /etc/portage/world | cut -d '/' -f 2
+  cat /etc/portage/world | cut -d '/' -f 2 | sort
 #+end_src
