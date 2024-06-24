@@ -379,7 +379,22 @@ Yay, it works! Of course there are some [[file:WTF.org][WTF]]s
 * Packages
 ** Basic
 #+begin_src bash
-emerge --ask --verbose --noreplace bash bash-completion openssh app-misc/screen tmux app-misc/mc eclean-kernel nano zile plocate the_silver_searcher dev-vcs/git wget curl pciutils usbutils ethtool w3m gentoolkit cpuid2cpuflags fortune-mod neofetch sshfs eselect-repository eselect-python lshw dmidecode whois multitail syslinux htop iotop lsof socat openbsd-netcat ckermit cdrtools dosfstools rlwrap zip unrar iw md5deep ripgrep terminus-font evtest nmap hdparm arj autoconf automake bat sys-devel/bc bison flex cmake dos2unix fd gcc gdb hwinfo srecord app-text/tree
+emerge --ask --verbose --noreplace bash bash-completion openssh app-misc/screen tmux app-misc/mc eclean-kernel nano zile plocate the_silver_searcher dev-vcs/git wget curl pciutils usbutils ethtool w3m gentoolkit cpuid2cpuflags fortune-mod neofetch sshfs eselect-repository eselect-python lshw dmidecode whois multitail syslinux htop iotop lsof socat openbsd-netcat ckermit cdrtools dosfstools rlwrap zip unrar iw md5deep ripgrep terminus-font evtest hdparm arj autoconf automake bat sys-devel/bc bison flex cmake dos2unix fd gcc gdb hwinfo srecord app-text/tree antiword
+#+end_src
+
+** Basic X
+#+begin_src bash
+  emerge --ask --verbose --noreplace xorg-server setxkbmap xcape xbindkeys wmctrl x11-misc/xclip xclock xdotool xdpyinfo xev xfontsel xgamma xinit xkill xmag xmessage xmodmap xprop xrandr xsetroot xhost xterm xtermcontrol rxvt-unicode mesa-progs font-bh-lucidatypewriter-100dpi open-sans dejavu inconsolata font-misc-misc liberation-fonts openbox obconf obmenu-generator gkrellm gkrellm-volume volumeicon parcellite gmrun feh qiv slock xdg-utils qt5ct qtsvg lxappearance media-gfx/graphviz imagemagick dev-perl/Gtk3 mpv yt-dlp geany tint2 dunst rofi picom connman connman-gtk firefox nmap emacs calibre openoffice barrier
+#+end_src
+
+** F***ing fonts
+#+begin_src bash
+emerge --ask --verbose --noreplace corefonts dejavu font-bh-lucidatypewriter-100dpi font-bh-ttf font-misc-misc hack inconsolata liberation-fonts open-sans terminus-font urw-fonts
+#+end_src
+
+** ???
+#+begin_src bash
+  emerge --ask --verbose --noreplace adwaita-icon-theme gnome-themes-extra xdg-desktop-portal-gtk pipewire-audio va-driver-all vdpau-driver-all mesa-vulkan-drivers pavucontrol pulseaudio-utils pulsemixer pamixer cmus cmus-plugin-ffmpeg  dict ffmpeg
 #+end_src
 
 * initramfs with dracut

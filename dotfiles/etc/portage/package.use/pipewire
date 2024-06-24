@@ -1,0 +1,4 @@
+media-video/pipewire sound-server gstreamer ffmpeg pipewire-alsa extra
+# media-video/ffmpeg -sdl
+media-video/ffmpeg opus theora vpx
+
