@@ -410,3 +410,112 @@ install_items+=" /boot/volume.key /etc/crypttab "
 #+begin_src bash
   cat /etc/portage/world | cut -d '/' -f 2 | sort
 #+end_src
+
+
+* Virtualbox Guest
+
+#+begin_src bash
+   emerge --ask --verbose virtualbox-guest-additions
+   rc-update add virtualbox-guest-additions default
+#+end_src
+#+begin_example
+ * Messages for package app-emulation/virtualbox-guest-additions-7.0.18:
+
+ *
+ * Please add users to the "vboxguest" group so they can
+ * benefit from seamless mode, auto-resize and clipboard.
+ *
+ * The vboxsf group has been added to make automount services work.
+ * These services are part of the shared folders support.
+ *
+ * Please add:
+ * /etc/init.d/virtualbox-guest-additions
+ * to the default runlevel in order to start
+ * needed services.
+ *
+ * An autostart .desktop file has been installed to start
+ * VBoxClient in desktop sessions.
+ *
+ * You can mount shared folders with:
+ * mount -t vboxsf <shared_folder_name> <mount_point>
+ *
+ * Warning:
+ * this ebuild is only needed if you are running gentoo
+ * inside a VirtualBox Virtual Machine, you don't need
+ * it to run VirtualBox itself.
+ *
+ * (Note: Above message is only printed the first time package is
+ * installed. Please look at /usr/share/doc/virtualbox-guest-additions-7.0.18/README.gentoo*
+ * for future reference)
+#+end_example
+
+* Add a user
+
+[[https://bugs.gentoo.org/920818][920818 – sys-apps/shadow-4.13-r4 Creating mailbox file: No such file or directory]]
+#+begin_src bash
+  mkdir /var/spool/mail
+  useradd -m -s /bin/bash energos
+#+end_src
+#+begin_example
+$ id
+uid=1000(energos) gid=1000(energos) groups=1000(energos)
+#+end_example
+
+#+begin_src bash
+  useradd -m -G users,wheel,audio,video,lp,uucp,cdrom,portage,usb -s /bin/bash energos
+  usermod -a -G plugdev energos
+
+  useradd -m -G users,wheel,audio,video,lp,uucp,cdrom,portage,usb,games,lpadmin,plugdev,vboxusers,vboxguest,vboxsf -s /bin/bash energos
+
+
+  useradd energos
+  passwd energos
+  usermod -a -G wheel,adm,portage,plugdev,pipewire,video,usb,cdrom,dialout,vboxguest,vboxsf energos
+
+#+end_src
+
+* Connman
+
+#+begin_src bash
+  rc-update del dhcpcd
+  rc-service dhcpcd stop
+  rc-update add connman default
+  rc-service connman start
+#+end_src
+
+* Sound
+- pqp: pulsemixer or amixer ?
+#+begin_src bash
+  usermod -r -G audio energos
+  usermod -a -G pipewire energos
+
+  emerge --ask --verbose --noreplace deadbeef cmus pavucontrol alsa-utils
+  rc-update add alsasound boot
+#+end_src
+
+* Freaking System Log
+#+begin_example
+# /etc/syslog-ng/syslog-ng.conf
+# destination messages { file("/var/log/messages"); };
+destination messages { file("/var/log/messages" perm(0640) group(adm)); };
+#+end_example
+
+* VBox Shared Folders
+#+begin_example
+# /etc/fstab
+Energos                 /mnt/Energos    vboxsf  noauto                          0 0
+Depot                   /mnt/Depot      vboxsf  noauto                          0 0
+#+end_example
+
+* No X11 pseudo bell
+#+begin_src bash
+cp /usr/share/pipewire/pipewire.conf ~/.config/pipewire/pipewire.conf
+#+end_src
+#+begin_example
+# module.x11.bell = true
+module.x11.bell = false
+#+end_example
+ou melhor ainda
+#+begin_src bash
+cp ~/Work/dotfiles/pipewire/pipewire.conf.d/11-beep.conf ~/.config/pipewire/pipewire.conf
+#+end_src

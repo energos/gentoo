@@ -71,3 +71,14 @@ gpg: WARNING: unsafe ownership on homedir '/etc/portage/gnupg'
 
 * Boot hangs if VirtualBox guest 3D acceleration is enabled
 * /etc/cripttab ignored
+
+* startx
+#+begin_verse
+parse_vt_settings: Cannot open /dev/tty0 (Permission denied)
+#+end_verse
+#+begin_src bash
+  rc-update add elogind boot
+#+end_src
+
+* No sound as VirtualBox guest
+Use "ICH AC97" audio
